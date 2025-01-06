@@ -386,11 +386,23 @@ install_node() {
             "config": {
                 "repositories": {
                     "dkg": {
-                        "url": $tripleStoreUrl,
-                        "name": "dkg",
-                        "username": "admin",
-                        "password": ""
-                    }
+                  "url": "http://localhost:9999",
+                  "name": "dkg",
+                  "username": "admin",
+                  "password": ""
+                },
+                "privateCurrent": {
+                  "url": "http://localhost:9999",
+                  "name": "private-current",
+                  "username": "admin",
+                  "password": ""
+                },
+                "publicCurrent": {
+                  "url": "http://localhost:9999",
+                  "name": "public-current",
+                  "username": "admin",
+                  "password": ""
+                }
                 }
             }
         } + .' $CONFIG_DIR/.origintrail_noderc > $CONFIG_DIR/origintrail_noderc_tmp) "Adding triple store config to node config file"
