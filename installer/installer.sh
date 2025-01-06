@@ -386,19 +386,19 @@ install_node() {
             "config": {
                 "repositories": {
                     "dkg": {
-                  "url": "http://localhost:9999",
+                  "url": $tripleStoreUrl,
                   "name": "dkg",
                   "username": "admin",
                   "password": ""
                 },
                 "privateCurrent": {
-                  "url": "http://localhost:9999",
+                  "url": $tripleStoreUrl,
                   "name": "private-current",
                   "username": "admin",
                   "password": ""
                 },
                 "publicCurrent": {
-                  "url": "http://localhost:9999",
+                  "url": $tripleStoreUrl,
                   "name": "public-current",
                   "username": "admin",
                   "password": ""
