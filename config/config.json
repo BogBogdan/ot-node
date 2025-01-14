@@ -397,7 +397,7 @@
                         "enabled": true,
                         "package": "./auto-updater/implementation/ot-auto-updater.js",
                         "config": {
-                            "branch": "v8/release/testnet"
+                            "branch": "v6/release/testnet"
                         }
                     }
                 }
