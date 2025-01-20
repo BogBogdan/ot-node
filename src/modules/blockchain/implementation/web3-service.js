@@ -1037,15 +1037,12 @@ class Web3Service {
     }
 
     async getParanetKnowledgeCollectionCount(paranetId) {
-        throw new Error(`Not implemented getParanetKnowledgeCollectionCount(${paranetId})`);
-        // TODO: implement
-
-        // return this.callContractFunction(
-        //     this.contracts.ParanetsRegistry,
-        //     'getKnowledgeAssetsCount',
-        //     [paranetId],
-        //     CONTRACTS.PARANETS_REGISTRY,
-        // );
+        return this.callContractFunction(
+            this.contracts.ParanetsRegistry,
+            'getKnowledgeCollectionsCount',
+            [paranetId],
+            CONTRACTS.PARANETS_REGISTRY,
+        );
     }
 
     async getParanetKnowledgeCollectionLocatorsWithPagination(paranetId, offset, limit) {
