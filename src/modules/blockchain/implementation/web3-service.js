@@ -1041,22 +1041,15 @@ class Web3Service {
             this.contracts.ParanetsRegistry,
             'getKnowledgeCollectionsCount',
             [paranetId],
-            CONTRACTS.PARANETS_REGISTRY,
         );
     }
 
     async getParanetKnowledgeCollectionLocatorsWithPagination(paranetId, offset, limit) {
-        throw new Error(
-            `Not implemented getParanetKnowledgeCollectionLocatorsWithPagination(${paranetId}, ${offset}, ${limit}})`,
+        return this.callContractFunction(
+            this.contracts.Paranet,
+            'getKnowledgeCollectionLocatorsWithPagination',
+            [paranetId, offset, limit],
         );
-        // TODO: implement
-
-        // return this.callContractFunction(
-        //     this.contracts.ParanetsRegistry,
-        //     'getKnowledgeAssetsWithPagination',
-        //     [paranetId, offset, limit],
-        //     CONTRACTS.PARANETS_REGISTRY,
-        // );
     }
 
     async getParanetMetadata(paranetId) {
