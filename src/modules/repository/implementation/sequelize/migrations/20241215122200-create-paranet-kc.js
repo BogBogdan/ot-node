@@ -42,15 +42,37 @@ export async function up({ context: { queryInterface, Sequelize } }) {
             defaultValue: Sequelize.literal('NOW()'),
         },
     });
-    await queryInterface.addConstraint('paranet_kc', {
-        fields: ['ual', 'paranet_ual'],
-        type: 'unique',
-    });
-    await queryInterface.addIndex(
-        'paranet_kc',
-        ['paranetUal', 'isSynced', 'retries', 'updatedAt'],
-        { name: 'idx_paranet_kc_sync_batch' },
-    );
+    const [[{ constraintExists }]] = await queryInterface.sequelize.query(`
+    SELECT COUNT(*) AS constraintExists
+    FROM information_schema.TABLE_CONSTRAINTS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'paranet_kc'
+      AND CONSTRAINT_NAME = 'paranet_kc_ual_paranet_ual_uk';
+    `);
+
+    if (!constraintExists) {
+        await queryInterface.addConstraint('paranet_kc', {
+            fields: ['ual', 'paranet_ual'],
+            type: 'unique',
+            name: 'paranet_kc_ual_paranet_ual_uk', // Keep the default or a custom name
+        });
+    }
+
+    const [[{ indexExists }]] = await queryInterface.sequelize.query(`
+        SELECT COUNT(*) AS indexExists
+        FROM information_schema.statistics
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'paranet_kc'
+          AND INDEX_NAME = 'idx_paranet_kc_sync_batch';
+    `);
+
+    if (!indexExists) {
+        await queryInterface.addIndex(
+            'paranet_kc',
+            ['paranet_ual', 'is_synced', 'retries', 'updated_at'],
+            { name: 'idx_paranet_kc_sync_batch' },
+        );
+    }
 
     const [[{ triggerInsertExists }]] = await queryInterface.sequelize.query(`
         SELECT COUNT(*) AS triggerInsertExists
@@ -60,7 +82,7 @@ export async function up({ context: { queryInterface, Sequelize } }) {
     if (triggerInsertExists === 0) {
         await queryInterface.sequelize.query(`
             CREATE TRIGGER after_insert_paranet_kc
-            AFTER INSERT ON paranet_kc
+            BEFORE INSERT ON paranet_kc
             FOR EACH ROW
             BEGIN
                 SET NEW.created_at = NOW();
@@ -76,7 +98,7 @@ export async function up({ context: { queryInterface, Sequelize } }) {
     if (triggerUpdateExists === 0) {
         await queryInterface.sequelize.query(`
             CREATE TRIGGER after_update_paranet_kc
-            AFTER UPDATE ON paranet_kc
+            BEFORE UPDATE ON paranet_kc
             FOR EACH ROW
             BEGIN
                 SET NEW.updated_at = NOW();
@@ -86,6 +108,15 @@ export async function up({ context: { queryInterface, Sequelize } }) {
 }
 
 export async function down({ context: { queryInterface } }) {
-    await queryInterface.removeIndex('paranet_kc', 'idx_paranet_kc_sync_batch');
+    const [[{ indexExists }]] = await queryInterface.sequelize.query(`
+    SELECT COUNT(*) AS indexExists
+    FROM information_schema.statistics
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'paranet_kc'
+      AND INDEX_NAME = 'idx_paranet_kc_sync_batch';
+    `);
+    if (indexExists) {
+        await queryInterface.removeIndex('paranet_kc', 'idx_paranet_kc_sync_batch');
+    }
     await queryInterface.dropTable('paranet_kc');
 }
