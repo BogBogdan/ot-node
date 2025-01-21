@@ -36,6 +36,8 @@ class LocalGetCommand extends Command {
             assertionId,
             isOperationV0,
             isV6Contract,
+            paranetUAL,
+            ual,
         } = command.data;
         let { knowledgeAssetId } = command.data;
         await this.operationIdService.updateOperationIdStatus(
@@ -44,57 +46,64 @@ class LocalGetCommand extends Command {
             OPERATION_ID_STATUS.GET.GET_LOCAL_START,
         );
 
-        // const response = {};
+        if (paranetUAL) {
+            let assertion;
+            let metadata;
 
-        // if (paranetUAL) {
-        //     const paranetRepository = this.paranetService.getParanetRepositoryName(paranetUAL);
+            const paranetRepository = this.paranetService.getParanetRepositoryName(paranetUAL);
 
-        //     const ual = this.ualService.deriveUAL(blockchain, contract, tokenId);
-        //     const syncedAssetRecord =
-        //         await this.repositoryModuleManager.getParanetSyncedAssetRecordByUAL(ual);
+            assertion = await this.tripleStoreService.getAssertion(
+                blockchain,
+                contract,
+                knowledgeCollectionId,
+                knowledgeAssetId,
+                contentType,
+                paranetRepository,
+            );
 
-        //     const nquads = await this.tripleStoreService.getAssertion(
-        //         paranetRepository,
-        //         syncedAssetRecord.publicAssertionId,
-        //     );
+            assertion =
+                typeof assertion === 'string'
+                    ? assertion.split('\n').filter((res) => res.length > 0)
+                    : assertion;
 
-        //     let privateNquads;
-        //     if (syncedAssetRecord.privateAssertionId) {
-        //         privateNquads = await this.tripleStoreService.getAssertion(
-        //             paranetRepository,
-        //             syncedAssetRecord.privateAssertionId,
-        //         );
-        //     }
+            if (!assertion?.length) {
+                this.handleError(
+                    operationId,
+                    blockchain,
+                    `Unable to locally find an asset with UAL: ${ual} in the paranet with UAL: ${paranetUAL}`,
+                    this.errorType,
+                );
+                return Command.empty();
+            }
 
-        //     if (nquads?.length) {
-        //         response.assertion = nquads;
-        //         if (privateNquads?.length) {
-        //             response.privateAssertion = privateNquads;
-        //         }
-        //     } else {
-        //         this.handleError(
-        //             operationId,
-        //             blockchain,
-        //             `Couldn't find locally asset with ${ual} in paranet ${paranetUAL}`,
-        //             this.errorType,
-        //         );
-        //     }
+            if (includeMetadata) {
+                metadata = await this.tripleStoreService.getAssertionMetadata(
+                    blockchain,
+                    contract,
+                    knowledgeCollectionId,
+                    knowledgeAssetId,
+                    paranetRepository,
+                );
+            }
 
-        //     await this.operationService.markOperationAsCompleted(
-        //         operationId,
-        //         blockchain,
-        //         response,
-        //         [
-        //             OPERATION_ID_STATUS.GET.GET_LOCAL_END,
-        //             OPERATION_ID_STATUS.GET.GET_END,
-        //             OPERATION_ID_STATUS.COMPLETED,
-        //         ],
-        //     );
+            const responseData = {
+                assertion,
+                ...(includeMetadata && metadata && { metadata }),
+            };
 
-        //     return Command.empty();
-        // }
+            await this.operationService.markOperationAsCompleted(
+                operationId,
+                blockchain,
+                responseData,
+                [
+                    OPERATION_ID_STATUS.GET.GET_LOCAL_END,
+                    OPERATION_ID_STATUS.GET.GET_END,
+                    OPERATION_ID_STATUS.COMPLETED,
+                ],
+            );
 
-        // else {
+            return Command.empty();
+        }
 
         const promises = [];
         this.operationIdService.emitChangeEvent(
@@ -104,7 +113,7 @@ class LocalGetCommand extends Command {
         );
 
         let assertionPromise;
-        let notMigrated = false;
+        let migrated = true;
 
         if (assertionId) {
             assertionPromise = (async () => {
@@ -132,7 +141,7 @@ class LocalGetCommand extends Command {
                         );
                         if (result?.length) {
                             if (!isOperationV0) {
-                                notMigrated = true;
+                                migrated = false;
                             }
                             break;
                         }
@@ -227,7 +236,7 @@ class LocalGetCommand extends Command {
 
         const responseData = {
             assertion:
-                (isOperationV0 || notMigrated) && isV6Contract
+                (isOperationV0 || !migrated) && isV6Contract
                     ? [...(assertion?.public ?? []), ...(assertion?.private ?? [])]
                     : assertion,
             ...(includeMetadata && metadata && { metadata }),
