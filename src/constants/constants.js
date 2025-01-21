@@ -276,6 +276,7 @@ export const ABIs = {
     ParanetKnowledgeCollectionsRegistry: require('dkg-evm-module/abi/ParanetKnowledgeCollectionsRegistry.json'),
     AskStorage: require('dkg-evm-module/abi/AskStorage.json'),
     Chronos: require('dkg-evm-module/abi/Chronos.json'),
+    Paranet: require('dkg-evm-module/abi/Paranet.json'),
 };
 
 export const CONTRACT_FUNCTION_PRIORITY = {};

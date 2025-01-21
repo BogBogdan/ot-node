@@ -50,16 +50,20 @@ class ParanetSyncCommand extends Command {
         ).toNumber();
         const countDatabase = await this.repositoryModuleManager.getParanetKcCount(paranetUAL);
 
-        const missingUALs = await this.blockchainModuleManager
-            .getParanetKnowledgeCollectionLocatorsWithPagination(
+        const missingUALs = (
+            await this.blockchainModuleManager.getParanetKnowledgeCollectionLocatorsWithPagination(
                 blockchain,
                 paranetId,
                 countDatabase,
                 countContract,
             )
-            .map(({ knowledgeCollectionStorageContract, tokenId }) =>
-                this.ualService.deriveUAL(blockchain, knowledgeCollectionStorageContract, tokenId),
-            );
+        ).map(({ knowledgeCollectionStorageContract, knowledgeCollectionTokenId }) =>
+            this.ualService.deriveUAL(
+                blockchain,
+                knowledgeCollectionStorageContract,
+                knowledgeCollectionTokenId,
+            ),
+        );
 
         await this.repositoryModuleManager.createParanetKcRecords(
             paranetUAL,
@@ -82,8 +86,7 @@ class ParanetSyncCommand extends Command {
             );
             return Command.repeat();
         }
-
-        // #region Sync batch
+        // #region Sync batch;
         const syncBatch = await this.repositoryModuleManager.getParanetKcSyncBatch(
             paranetUAL,
             PARANET_SYNC_RETRIES_LIMIT,
@@ -137,7 +140,7 @@ class ParanetSyncCommand extends Command {
         paranetId,
         paranetNodesAccessPolicy,
     ) {
-        const { blockchain, contract, tokenId } = this.ualService.resolveUAL(ual);
+        const { blockchain, contract, knowledgeCollectionId } = this.ualService.resolveUAL(ual);
 
         const getOperationId = await this.operationIdService.generateOperationId(
             OPERATION_ID_STATUS.GET.GET_START,
@@ -173,9 +176,7 @@ class ParanetSyncCommand extends Command {
                 id: ual,
                 blockchain,
                 contract,
-                tokenId,
-                state: assertionId,
-                assertionId,
+                knowledgeCollectionId,
                 paranetId,
                 paranetUAL,
             },
@@ -195,7 +196,9 @@ class ParanetSyncCommand extends Command {
 
         // #region GET (NETWORK)
         if (getResult?.status !== OPERATION_ID_STATUS.COMPLETED) {
-            this.logger.info(`Local GET failed for tokenId: ${tokenId}, attempting network GET.`);
+            this.logger.info(
+                `Local GET failed for Knowledge Collection Id: ${knowledgeCollectionId}, attempting network GET.`,
+            );
 
             // TODO: Fix networkGet
             const networkCommandName =
@@ -212,7 +215,7 @@ class ParanetSyncCommand extends Command {
                     id: ual,
                     blockchain,
                     contract,
-                    tokenId,
+                    knowledgeCollectionId,
                     state: assertionId,
                     assertionId,
                     paranetId,
@@ -236,7 +239,7 @@ class ParanetSyncCommand extends Command {
 
         if (getResult?.status !== OPERATION_ID_STATUS.COMPLETED) {
             throw new Error(
-                `Unable to sync tokenId: ${tokenId}, for contract: ${contract}, state index: ${stateIndex}, blockchain: ${blockchain}, GET result: ${JSON.stringify(
+                `Unable to sync Knowledge Collection Id: ${knowledgeCollectionId}, for contract: ${contract}, state index: ${stateIndex}, blockchain: ${blockchain}, GET result: ${JSON.stringify(
                     getResult,
                 )}`,
             );
@@ -245,7 +248,7 @@ class ParanetSyncCommand extends Command {
         const data = await this.operationIdService.getCachedOperationIdData(getOperationId);
         this.logger.debug(
             `Paranet sync: ${
-                data.assertion.public.length + data.assertion.private.length
+                data.assertion.public.length + (data.assertion?.private?.length || 0)
             } nquads found for asset with ual: ${ual}, state index: ${stateIndex}, assertionId: ${assertionId}`,
         );
 
@@ -303,17 +306,17 @@ class ParanetSyncCommand extends Command {
                 `Paranet sync: Syncing asset: ${ual} for paranet: ${paranetId}, operation ID: ${operationId}`,
             );
 
-            const { blockchain, contract, tokenId } = this.ualService.resolveUAL(ual);
+            const { blockchain, contract, knowledgeCollectionId } = this.ualService.resolveUAL(ual);
             const merkleRoots =
                 await this.blockchainModuleManager.getKnowledgeCollectionMerkleRoots(
                     blockchain,
                     contract,
-                    tokenId,
+                    knowledgeCollectionId,
                 );
 
             for (let stateIndex = 0; stateIndex < merkleRoots.length; stateIndex += 1) {
                 this.logger.debug(
-                    `Paranet sync: Fetching state: ${merkleRoots[stateIndex]} index: ${
+                    `Paranet sync: Fetching state: ${merkleRoots[stateIndex].merkleRoot} index: ${
                         stateIndex + 1
                     } of ${merkleRoots.length} for asset with ual: ${ual}.`,
                 );
@@ -322,7 +325,7 @@ class ParanetSyncCommand extends Command {
                     paranetUAL,
                     ual,
                     stateIndex,
-                    merkleRoots[stateIndex],
+                    merkleRoots[stateIndex].merkleRoot,
                     paranetId,
                     paranetNodesAccessPolicy,
                 );
