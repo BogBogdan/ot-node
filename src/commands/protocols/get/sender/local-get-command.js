@@ -37,7 +37,6 @@ class LocalGetCommand extends Command {
             isOperationV0,
             isV6Contract,
             paranetUAL,
-            ual,
         } = command.data;
         let { knowledgeAssetId } = command.data;
         await this.operationIdService.updateOperationIdStatus(
@@ -49,6 +48,13 @@ class LocalGetCommand extends Command {
         if (paranetUAL) {
             let assertion;
             let metadata;
+
+            const ual = this.ualService.deriveUAL(
+                blockchain,
+                contract,
+                knowledgeCollectionId,
+                knowledgeAssetId,
+            );
 
             const paranetRepository = this.paranetService.getParanetRepositoryName(paranetUAL);
 

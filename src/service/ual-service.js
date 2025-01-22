@@ -8,7 +8,8 @@ class UALService {
     }
 
     deriveUAL(blockchain, contract, knowledgeCollectionId, knowledgeAssetId) {
-        return `did:dkg:${blockchain.toLowerCase()}/${contract.toLowerCase()}/${knowledgeCollectionId}/${knowledgeAssetId}`;
+        const ual = `did:dkg:${blockchain.toLowerCase()}/${contract.toLowerCase()}/${knowledgeCollectionId}`;
+        return knowledgeAssetId ? `${ual}/${knowledgeAssetId}` : ual;
     }
 
     // did:dkg:otp:2043/0x123231/5
