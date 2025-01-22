@@ -37,6 +37,7 @@ class LocalGetCommand extends Command {
             isOperationV0,
             isV6Contract,
             paranetUAL,
+            paranetSync,
         } = command.data;
         let { knowledgeAssetId } = command.data;
         await this.operationIdService.updateOperationIdStatus(
@@ -45,7 +46,7 @@ class LocalGetCommand extends Command {
             OPERATION_ID_STATUS.GET.GET_LOCAL_START,
         );
 
-        if (paranetUAL) {
+        if (paranetUAL && !paranetSync) {
             let assertion;
             let metadata;
 
@@ -57,6 +58,11 @@ class LocalGetCommand extends Command {
             );
 
             const paranetRepository = this.paranetService.getParanetRepositoryName(paranetUAL);
+            knowledgeAssetId = await this.blockchainModuleManager.getKnowledgeAssetsRange(
+                blockchain,
+                contract,
+                knowledgeCollectionId,
+            );
 
             assertion = await this.tripleStoreService.getAssertion(
                 blockchain,
@@ -72,7 +78,7 @@ class LocalGetCommand extends Command {
                     ? assertion.split('\n').filter((res) => res.length > 0)
                     : assertion;
 
-            if (!assertion?.length) {
+            if (!assertion?.public?.length) {
                 this.handleError(
                     operationId,
                     blockchain,

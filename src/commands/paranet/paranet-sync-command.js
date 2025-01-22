@@ -168,7 +168,7 @@ class ParanetSyncCommand extends Command {
         let getResult;
 
         await this.commandExecutor.add({
-            name: 'localGetCommand',
+            name: 'getFindShardCommand',
             sequence: [],
             delay: 0,
             data: {
@@ -177,12 +177,16 @@ class ParanetSyncCommand extends Command {
                 blockchain,
                 contract,
                 knowledgeCollectionId,
+                state: assertionId,
                 paranetId,
                 paranetUAL,
+                paranetNodesAccessPolicy,
+                paranetSync: true,
             },
             transactional: false,
         });
 
+        attempt = 0;
         do {
             await setTimeout(pollingInterval);
             getResult = await this.operationIdService.getOperationIdRecord(getOperationId);
@@ -192,49 +196,6 @@ class ParanetSyncCommand extends Command {
             getResult?.status !== OPERATION_ID_STATUS.FAILED &&
             getResult?.status !== OPERATION_ID_STATUS.COMPLETED
         );
-        // #endregion
-
-        // #region GET (NETWORK)
-        if (getResult?.status !== OPERATION_ID_STATUS.COMPLETED) {
-            this.logger.info(
-                `Local GET failed for Knowledge Collection Id: ${knowledgeCollectionId}, attempting network GET.`,
-            );
-
-            // TODO: Fix networkGet
-            const networkCommandName =
-                paranetNodesAccessPolicy === 'OPEN'
-                    ? 'networkGetCommand'
-                    : 'curatedParanetNetworkGetCommand';
-
-            await this.commandExecutor.add({
-                name: networkCommandName,
-                sequence: [],
-                delay: 0,
-                data: {
-                    operationId: getOperationId,
-                    id: ual,
-                    blockchain,
-                    contract,
-                    knowledgeCollectionId,
-                    state: assertionId,
-                    assertionId,
-                    paranetId,
-                    paranetUAL,
-                },
-                transactional: false,
-            });
-
-            attempt = 0;
-            do {
-                await setTimeout(pollingInterval);
-                getResult = await this.operationIdService.getOperationIdRecord(getOperationId);
-                attempt += 1;
-            } while (
-                attempt < maxAttempts &&
-                getResult?.status !== OPERATION_ID_STATUS.FAILED &&
-                getResult?.status !== OPERATION_ID_STATUS.COMPLETED
-            );
-        }
         // #endregion NETWORK END
 
         if (getResult?.status !== OPERATION_ID_STATUS.COMPLETED) {
