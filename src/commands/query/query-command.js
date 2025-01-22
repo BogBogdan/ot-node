@@ -38,8 +38,9 @@ class QueryCommand extends Command {
         // check if it's federated query
         const pattern = /SERVICE\s+<([^>]+)>/g;
         const matches = query.match(pattern);
-        if (matches.length > 0) {
-            for (const repositoryInOriginalQuery of matches) {
+        if (matches?.length > 0) {
+            for (const match of matches) {
+                const repositoryInOriginalQuery = match.split('<')[1].split('>')[0];
                 const repositoryName = this.validateRepositoryName(repositoryInOriginalQuery);
                 const federatedQueryRepositoryEndpoint =
                     this.tripleStoreService.getRepositorySparqlEndpoint(repositoryName);
